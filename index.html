@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NetApp LPU Calculator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- HEADER MODERNO -->
+  <header class="header-app2">
+    <div class="header-left2">
+      <img src="logo_columbia.png" alt="Columbia Integração" class="logo-columbia">
+      <h1 class="titulo-lpu" style="margin:8px 0 0 0;">NetApp LPU Calculator</h1>
+    </div>
+    <div class="header-right2">
+      <span id="userInfo"></span>
+      <button id="logoutBtn">🚪 Sair</button>
+    </div>
+  </header>
+
+  <!-- Login -->
+  <div id="loginBox">
+    <form class="login-card" onsubmit="doLogin();return false;">
+      <img src="logo_columbia.png" />
+      <h2 style="margin:0 0 10px 0;font-size:1.4rem;color:var(--primary);font-weight:800;">Login</h2>
+      <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username">
+      <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password">
+      <button type="submit">Entrar</button>
+      <div id="loginMsg" style="color:#d32f2f;font-size:1.06rem;min-height:25px;text-align:center;"></div>
+    </form>
+  </div>
+
+  <div class="main-app">
+    <!-- ----------- RESTANTE DA SUA APP (NÃO TROQUE O QUE JÁ FUNCIONA) ----------- -->
+    <!-- Exemplo: -->
+    <div class="card">
+      <label for="clientName"><strong>Nome do cliente:</strong></label>
+      <input type="text" id="clientName" placeholder="ex.: Acme Corp" />
+      <p>Preencha as quantidades de cada serviço abaixo (coloque 0 se não se aplica):</p>
+      <form id="lpuForm" onsubmit="return false;">
+        <input type="text" id="serviceSearch" placeholder="Buscar serviço por código ou descrição..." style="margin-bottom: 1rem; width: 100%;">
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>Código</th><th>Descrição</th><th>Unidade</th><th>Qtd.</th></tr>
+            </thead>
+            <tbody id="servicesBody"></tbody>
+          </table>
+        </div>
+        <div class="flex-row">
+          <div class="card">
+            <h2>Valores por hora (opcional)</h2>
+            <table>
+              <tr><th>Perfil</th><th>R$/h</th></tr>
+              <tr><td>gp</td><td><input type="number" id="rate-gp" min="0" value="0" /></td></tr>
+              <tr><td>jr</td><td><input type="number" id="rate-jr" min="0" value="0" /></td></tr>
+              <tr><td>pl</td><td><input type="number" id="rate-pl" min="0" value="0" /></td></tr>
+              <tr><td>sr</td><td><input type="number" id="rate-sr" min="0" value="0" /></td></tr>
+            </table>
+          </div>
+          <div class="card">
+            <label for="supportMonths"><strong>Meses de suporte continuado (1,5h/mês):</strong></label>
+            <input type="number" id="supportMonths" min="0" value="0" style="width:6rem;" />
+          </div>
+        </div>
+        <div style="margin: 1rem 0;">
+          <label for="projectName"><strong>Nome do projeto:</strong></label>
+          <input type="text" id="projectName" placeholder="Ex: Projeto XPTO" style="width:200px;" />
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+            <button type="button" id="saveBtn"><span>💾</span>Salvar</button>
+            <select id="projectsList"></select>
+            <button type="button" id="loadBtn"><span>📂</span>Carregar</button>
+            <button type="button" id="deleteBtn"><span>🗑️</span>Excluir</button>
+          </div>
+        </div>
+        <div id="formMessage"></div>
+        <button type="button" id="calcBtn" style="margin-top: 1rem;"><span>🧮</span>Calcular</button>
+      </form>
+    </div>
+
+    <div id="output" class="card" style="display:none;">
+      <h2>Resultado em horas</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Perfil</th><th>Horas</th></tr></thead>
+          <tbody id="hoursBody"></tbody>
+          <tfoot><tr><th>Total</th><th id="totalHours"></th></tr></tfoot>
+        </table>
+      </div>
+      <div id="costSection" style="display:none;">
+        <h2>Estimativa de custo</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Perfil</th><th>Horas</th><th>R$/h</th><th>Subtotal</th></tr></thead>
+            <tbody id="costBody"></tbody>
+            <tfoot><tr><th colspan='3'>Total</th><th id="totalCost"></th></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <h2>Resumo do projeto</h2>
+      <details open>
+        <summary>Clique para ver/ocultar</summary>
+        <textarea id="summary" readonly style="height:150px; width:100%;"></textarea>
+      </details>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+        <button type="button" id="copyBtn"><span>📋</span>Copiar Resumo</button>
+        <button type="button" id="pdfBtn"><span>📄</span>Exportar PDF</button>
+        <button type="button" id="csvBtn"><span>🗂️</span>Exportar CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- jsPDF, AutoTable e App.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.0/jspdf.plugin.autotable.min.js"></script>
+  <script src="app.js"></script>
+  <script>
+    function doLogin() {
+      const user = document.getElementById("loginUser").value;
+      const pass = document.getElementById("loginPass").value;
+      fetch('http://localhost:3000/api/login', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: user, senha: pass })
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.token) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", user);
+            document.body.classList.add("logado");
+            document.getElementById("loginBox").style.display = "none";
+            document.querySelector(".main-app").style.display = "block";
+            document.getElementById("logoutBtn").style.display = "block";
+            document.getElementById("userInfo").innerHTML = `Logado como: <b>${user}</b>`;
+            if (window.carregarServicos) carregarServicos();
+          } else {
+            document.getElementById("loginMsg").innerText = data.erro || "Erro ao logar";
+          }
+        })
+        .catch(() => {
+          document.getElementById("loginMsg").innerText = "Erro de conexão";
+        });
+    }
+
+    // Exibir ou esconder logout conforme login
+    window.addEventListener("DOMContentLoaded", () => {
+      const user = localStorage.getItem("user") || "";
+      document.getElementById("userInfo").innerHTML = user ? `Logado como: <b>${user}</b>` : "";
+      if (localStorage.getItem("token")) {
+        document.body.classList.add("logado");
+        document.getElementById("loginBox").style.display = "none";
+        document.querySelector(".main-app").style.display = "block";
+        document.getElementById("logoutBtn").style.display = "block";
+        if (window.carregarServicos) carregarServicos();
+      } else {
+        document.body.classList.remove("logado");
+        document.getElementById("loginBox").style.display = "flex";
+        document.querySelector(".main-app").style.display = "none";
+        document.getElementById("logoutBtn").style.display = "none";
+        document.getElementById("userInfo").innerHTML = "";
+      }
+    });
+
+    // Lógica do logout (deve estar igual ao app.js)
+    document.getElementById("logoutBtn").onclick = function() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      document.body.classList.remove("logado");
+      document.getElementById("loginBox").style.display = "flex";
+      document.querySelector(".main-app").style.display = "none";
+      document.getElementById("logoutBtn").style.display = "none";
+      document.getElementById("userInfo").innerHTML = "";
+      if (document.getElementById("formMessage")) document.getElementById("formMessage").innerHTML = "";
+    };
+  </script>
+</body>
+</html>
